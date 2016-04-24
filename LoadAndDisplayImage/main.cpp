@@ -1,21 +1,24 @@
 #include <iostream>
+#include <string>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
 using namespace std;
 
 int main(int argc, char** argv) {
 
-    if (argc != 2) {
-        cout << " Usage: display_image ImageToLoadAndDisplay" << endl;
+    string imageName("./test.jpg");
+    if (argc > 1) {
+        imageName = argv[1];
         return -1;
     }
 
     Mat image;
-    image = imread("./test.jpg");
+    image = imread(imageName.c_str(), CV_LOAD_IMAGE_COLOR);
 
-    if(! image.data ) {
+    if( image.empty() ) {
         cout <<  "Could not open or find the image" << std::endl ;
         return -1;
     }
