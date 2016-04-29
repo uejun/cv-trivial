@@ -33,6 +33,8 @@ int main() {
 
     addWeighted(a, alpha, b, beta, 0.0, dst);
 
+
+
     imshow("Blending", dst);
 
     waitKey(0);
