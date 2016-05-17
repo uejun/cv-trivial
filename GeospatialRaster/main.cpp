@@ -78,7 +78,36 @@ Vec3b get_dem_color(const double& elevation) {
     return lerp(color_range[idx].first, color_range[idx+1].first, t);
 }
 
+/*
+ * Given a pixel coordinate and the size of the input image, compute the pixel location on the DEM image.
+ */
+Point2d world2dem(Point2d const& coordinate, const Size& dem_size) {
+    // relate this to the dem points
+    // ASSUMING THAT DEM DATA IS ORTHORECTIFIED
+    double demRatioX = ((dem_tr.x - coordinate.x)/(dem_tr.x - dem_bl.x));
+    double demRatioY = 1 - ((dem_tr.y - coordinate.y)/(dem_tr.y - dem_bl.y));
 
+    Point2d output;
+    output.x = demRatioX * dem_size.width;
+    output.y = demRatioY * dem_size.height;
+
+    return output;
+}
+
+/*
+ * Convert a pixel coordinate to world coordinates
+ */
+Point2d pixel2world(const int& x, const int& y, const Size& size) {
+    // compute the ratio of the pixel location to its dimension
+    double rx = (double)x / size.width;
+    double ry = (double)y / size.height;
+
+    // compute LERP of each coordinate
+    Point2d rightSide = lerp(tr, br, ry);
+    Point2d leftSide = lerp(tl, bl, ry);
+
+    return lerp(leftSide, rightSide, rx);
+}
 
 
 int main() {
