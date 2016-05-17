@@ -109,8 +109,72 @@ Point2d pixel2world(const int& x, const int& y, const Size& size) {
     return lerp(leftSide, rightSide, rx);
 }
 
+/*
+ * Add color to a specific pixel color value
+ */
+void add_color(Vec3b& pix, const uchar& b, const uchar& g, const uchar& r) {
+    if(pix[0] + b < 255 && pix[0] + b >= 0) {pix[0] += b;}
+    if(pix[1] + g < 255 && pix[1] + g >=0) {pix[1] += g;}
+    if(pix[2] + r < 255 && pix[2] + r >=0) {pix[2] += r;}
+}
 
-int main() {
-    cout << "Hello, World!" << endl;
+int main(int argc, char* argv[]) {
+
+    if (argc < 3) {
+        cout << "usage: " << argv[0] << " <image> <dem>" << endl;
+        return -1;
+    }
+
+    Mat image = imread(argv[1], IMREAD_LOAD_GDAL | IMREAD_COLOR);
+    Mat dem = imread(argv[2], IMREAD_LOAD_GDAL | IMREAD_ANYDEPTH);
+
+    Mat output_dem(image.size(), CV_8UC3);
+    Mat output_dem_flood(image.size(), CV_8UC3);
+
+    if (dem.type() != CV_16SC1) { throw runtime_error("DEM image type must be CV_16SC1");}
+
+    color_range.push_back(pair<Vec3b, double>(Vec3b(188, 154, 46), -1));
+    color_range.push_back(pair<Vec3b, double>(Vec3b(110, 220, 110), 0.25));
+    color_range.push_back(pair<Vec3b, double>(Vec3b(150, 250, 230), 20));
+    color_range.push_back( pair<Vec3b,double>(Vec3b( 160, 220, 200),   75));
+    color_range.push_back( pair<Vec3b,double>(Vec3b( 220, 190, 170),  100));
+    color_range.push_back( pair<Vec3b,double>(Vec3b( 250, 180, 140),  200));
+
+    double minElevation = -10;
+
+    for(int y=0; y<image.rows; y++) {
+        for(int x=0; x<image.cols; x++) {
+
+            Point2d coordinate = pixel2world(x, y, image.size());
+            Point2d dem_coordinate = world2dem(coordinate, dem.size());
+
+            //extract the elevation
+            double dz;
+            if(dem_coordinate.x >= 0 && dem_coordinate.y >= 0 && dem_coordinate.x < dem.cols && dem_coordinate.y < dem.rows) {
+                dz = dem.at<short>(dem_coordinate);
+            } else {
+                dz = minElevation;
+            }
+
+            output_dem_flood.at<Vec3b>(y,x) = image.at<Vec3b>(y,x);
+
+            Vec3b actualColor = get_dem_color(dz);
+            output_dem.at<Vec3b>(y,x) = actualColor;
+
+            if(dz < 10) {
+                add_color(output_dem_flood.at<Vec3b>(y,x), 90, 0, 0);
+            } else if(dz < 50) {
+                add_color(output_dem_flood.at<Vec3b>(y,x), 0, 90, 0);
+            } else if(dz < 100) {
+                add_color(output_dem_flood.at<Vec3b>(y,x), 0, 0, 90);
+            }
+
+        }
+    }
+
+    imshow("heat-map", output_dem);
+    imshow("flooded", output_dem_flood);
+
+    waitKey(0);
     return 0;
 }
